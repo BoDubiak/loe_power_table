@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Коли одночасно є світло</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap");
+
+    :root {
+      --bg: #0b1021;
+      --panel: rgba(15, 23, 42, 0.7);
+      --panel-strong: rgba(17, 24, 39, 0.9);
+      --stroke: rgba(255, 255, 255, 0.08);
+      --accent: #f7b500;
+      --accent-2: #5fe3f2;
+      --text: #e7ecf2;
+      --muted: #9fb2c8;
+      --danger: #ff6b6b;
+      --success: #4ade80;
+      --radius: 14px;
+      --shadow: 0 30px 120px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Space Grotesk", "Manrope", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 20%, #13203b, #0b1021 45%),
+                  radial-gradient(circle at 80% 10%, #0f203a, transparent 35%),
+                  radial-gradient(circle at 80% 80%, #162444, transparent 40%),
+                  #0b1021;
+      padding: 32px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .wrap {
+      width: min(1200px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    header {
+      background: linear-gradient(120deg, rgba(17, 24, 39, 0.9), rgba(24, 24, 48, 0.85));
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 22px 22px 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 12% 40%, rgba(247, 181, 0, 0.25), transparent 35%),
+                  radial-gradient(circle at 78% 35%, rgba(95, 227, 242, 0.16), transparent 40%),
+                  radial-gradient(circle at 40% 90%, rgba(247, 181, 0, 0.12), transparent 45%);
+      z-index: 0;
+    }
+
+    header .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      position: relative;
+      z-index: 1;
+      width: fit-content;
+    }
+
+    header h1 {
+      margin: 12px 0 8px;
+      font-size: clamp(26px, 3vw, 34px);
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+    }
+
+    header p.meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+
+    .date-switcher {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip-btn {
+      border: 1px solid var(--stroke);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .chip-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(247, 181, 0, 0.8);
+      background: rgba(247, 181, 0, 0.08);
+    }
+
+    .chip-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b0f1d;
+      border-color: transparent;
+      box-shadow: 0 10px 40px rgba(247, 181, 0, 0.25);
+    }
+
+    .status {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status.danger {
+      color: #ffc7c7;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 960px) {
+      .panels {
+        grid-template-columns: 1fr;
+      }
+      body {
+        padding: 18px;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel h2 .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 0 6px rgba(247, 181, 0, 0.1);
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      position: relative;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .chip input {
+      accent-color: var(--accent);
+      width: 18px;
+      height: 18px;
+    }
+
+    .chip:hover {
+      border-color: rgba(247, 181, 0, 0.7);
+      background: rgba(247, 181, 0, 0.07);
+      transform: translateY(-2px);
+    }
+
+    .chip strong {
+      font-size: 14px;
+      letter-spacing: 0.01em;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--stroke);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(247, 181, 0, 0.8);
+      background: rgba(247, 181, 0, 0.08);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b0f1d;
+      border: none;
+      box-shadow: 0 10px 40px rgba(247, 181, 0, 0.25);
+    }
+
+    button.primary:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, #ffd75a, #7ff0ff);
+    }
+
+    .result {
+      display: grid;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .slot {
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(95, 227, 242, 0.14), rgba(247, 181, 0, 0.12));
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slot span {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-size: 16px;
+    }
+
+    .slot small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .notice {
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .notice .marker {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .card {
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: var(--panel-strong);
+      display: grid;
+      gap: 8px;
+    }
+
+    .card .title-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(95, 227, 242, 0.16);
+      border: 1px solid rgba(95, 227, 242, 0.4);
+      color: #d7f8ff;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .outages, .availability {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+      letter-spacing: 0.01em;
+    }
+
+    .tag.danger {
+      border-color: rgba(255, 107, 107, 0.4);
+      color: #ffc7c7;
+      background: rgba(255, 107, 107, 0.08);
+    }
+
+    .tag.success {
+      border-color: rgba(74, 222, 128, 0.35);
+      color: #d1ffd8;
+      background: rgba(74, 222, 128, 0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px rgba(247, 181, 0, 0.16);"></span>
+        Львівобленерго — графік
+      </div>
+      <h1>Коли у вибраних групах є світло одночасно?</h1>
+      <div class="meta-row">
+        <p class="meta" id="meta"></p>
+        <div class="controls-row">
+          <div class="date-switcher" id="date-switcher"></div>
+          <button id="refresh" class="primary">Оновити</button>
+        </div>
+      </div>
+      <div id="status" class="status"></div>
+    </header>
+
+    <div class="panels">
+      <section class="panel">
+        <h2><span class="dot"></span>Вибір груп</h2>
+        <div class="chips" id="group-list"></div>
+        <div class="actions">
+          <button id="select-all">Вибрати всі</button>
+          <button id="clear-all">Очистити</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2><span class="dot"></span>Спільні проміжки зі світлом</h2>
+        <div id="result" class="result"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2><span class="dot"></span>Деталі по групах</h2>
+      <p class="muted">Бачиш, коли відключають (червоне) і коли гарантовано є світло (зелене) для кожної групи.</p>
+      <div class="cards" id="group-cards"></div>
+    </section>
+  </div>
+
+  <script>
+    const sourceUrl = "https://poweron.loe.lviv.ua/";
+    const fallbackProxyUrl = "https://r.jina.ai/https://poweron.loe.lviv.ua/";
+
+    const state = {
+      schedules: [],
+      activeIndex: 0
+    };
+    let activeSchedule = null;
+    let availabilityByGroup = {};
+
+    const dayEndMinutes = 24 * 60;
+
+    const parseTime = (value) => {
+      const [h, m] = value.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    const toClock = (minutes) => {
+      const h = Math.floor(minutes / 60).toString().padStart(2, "0");
+      const m = (minutes % 60).toString().padStart(2, "0");
+      return `${h}:${m}`;
+    };
+
+    const invertOutages = (outages) => {
+      const sorted = outages
+        .map(([start, end]) => ({ start: parseTime(start), end: parseTime(end) }))
+        .sort((a, b) => a.start - b.start);
+
+      const available = [];
+      let cursor = 0;
+
+      for (const interval of sorted) {
+        const safeStart = Math.max(0, interval.start);
+        const safeEnd = Math.min(dayEndMinutes, interval.end);
+        if (safeStart > cursor) {
+          available.push({ start: cursor, end: safeStart });
+        }
+        cursor = Math.max(cursor, safeEnd);
+      }
+
+      if (cursor < dayEndMinutes) {
+        available.push({ start: cursor, end: dayEndMinutes });
+      }
+
+      return available.filter((i) => i.end > i.start);
+    };
+
+    const intersectIntervals = (listA, listB) => {
+      const result = [];
+      let i = 0;
+      let j = 0;
+      while (i < listA.length && j < listB.length) {
+        const start = Math.max(listA[i].start, listB[j].start);
+        const end = Math.min(listA[i].end, listB[j].end);
+        if (start < end) {
+          result.push({ start, end });
+        }
+        if (listA[i].end < listB[j].end) {
+          i += 1;
+        } else {
+          j += 1;
+        }
+      }
+      return result;
+    };
+
+    const intersectMany = (lists) => {
+      if (!lists.length) return [];
+      return lists.slice(1).reduce((acc, list) => intersectIntervals(acc, list), lists[0]);
+    };
+
+    const computeAvailabilityMap = (groups) =>
+      Object.fromEntries(groups.map((g) => [g.id, invertOutages(g.outages)]));
+
+    const metaLine = document.getElementById("meta");
+    const groupList = document.getElementById("group-list");
+    const resultEl = document.getElementById("result");
+    const groupCards = document.getElementById("group-cards");
+    const statusEl = document.getElementById("status");
+    const dateSwitcher = document.getElementById("date-switcher");
+    const refreshBtn = document.getElementById("refresh");
+
+    const setStatus = (message, tone = "muted") => {
+      statusEl.textContent = message;
+      statusEl.className = `status ${tone === "danger" ? "danger" : ""}`;
+    };
+
+    const showNoData = (message) => {
+      metaLine.textContent = "";
+      dateSwitcher.innerHTML = "";
+      groupList.innerHTML = "";
+      groupCards.innerHTML = "";
+      resultEl.innerHTML = `
+        <div class="notice">
+          <span class="marker"></span>
+          <div>
+            <div>${message}</div>
+            <small class="muted">Спробуй натиснути «Оновити» трохи згодом.</small>
+          </div>
+        </div>
+      `;
+    };
+
+    const formatInterval = (interval) =>
+      `${toClock(interval.start)} - ${toClock(interval.end)}`;
+
+    const updateResult = () => {
+      if (!activeSchedule) return;
+      const selected = Array.from(document.querySelectorAll('input[name="group"]:checked')).map(
+        (input) => input.value
+      );
+
+      if (!selected.length) {
+        resultEl.innerHTML = `
+          <div class="notice">
+            <span class="marker"></span>
+            <div>
+              <div>Обери принаймні одну групу.</div>
+              <small class="muted">Можеш клікнути «Вибрати всі», щоб побачити повний розклад.</small>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const intervals = intersectMany(selected.map((id) => availabilityByGroup[id] || []));
+
+      if (!intervals.length) {
+        resultEl.innerHTML = `
+          <div class="notice">
+            <span class="marker"></span>
+            <div>
+              <div>Немає проміжків, коли у всіх вибраних груп одночасно є світло.</div>
+              <small class="muted">Спробуй зняти частину груп, щоб побачити перетин.</small>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      resultEl.innerHTML = intervals
+        .map(
+          (interval) => `
+            <div class="slot">
+              <span>${formatInterval(interval)}</span>
+              <small>Світло у всіх вибраних груп</small>
+            </div>
+          `
+        )
+        .join("");
+    };
+
+    const renderGroups = () => {
+      const previouslySelected = new Set(
+        Array.from(document.querySelectorAll('input[name="group"]:checked')).map((i) => i.value)
+      );
+      groupList.innerHTML = "";
+      activeSchedule.groups.forEach((group) => {
+        const label = document.createElement("label");
+        label.className = "chip";
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.name = "group";
+        input.value = group.id;
+        input.checked = previouslySelected.has(group.id);
+        input.addEventListener("change", updateResult);
+
+        const name = document.createElement("strong");
+        name.textContent = `Група ${group.id}`;
+
+        label.append(input, name);
+        groupList.appendChild(label);
+      });
+    };
+
+    const renderGroupCards = () => {
+      groupCards.innerHTML = activeSchedule.groups
+        .map((group) => {
+          const outageTags = group.outages
+            .map(([start, end]) => `<span class="tag danger">${start} — ${end}</span>`)
+            .join("");
+
+          const availabilityTags = (availabilityByGroup[group.id] || [])
+            .map((interval) => `<span class="tag success">${formatInterval(interval)}</span>`)
+            .join("");
+
+          return `
+            <article class="card">
+              <div class="title-line">
+                <strong>Група ${group.id}</strong>
+                <span class="pill">Світло / немає</span>
+              </div>
+              <div class="muted">Відключення:</div>
+              <div class="outages">${outageTags}</div>
+              <div class="muted">Є світло:</div>
+              <div class="availability">${availabilityTags}</div>
+            </article>
+          `;
+        })
+        .join("");
+    };
+
+    const renderDateSwitcher = () => {
+      dateSwitcher.innerHTML = "";
+      state.schedules.forEach((item, idx) => {
+        const btn = document.createElement("button");
+        btn.className = `chip-btn ${idx === state.activeIndex ? "active" : ""}`;
+        btn.textContent = item.date;
+        btn.addEventListener("click", () => applySchedule(idx));
+        dateSwitcher.appendChild(btn);
+      });
+    };
+
+    const renderMeta = () => {
+      const updated =
+        activeSchedule.updatedAt && activeSchedule.updatedAt !== ""
+          ? activeSchedule.updatedAt
+          : "н/д";
+      metaLine.textContent = `Графік на ${activeSchedule.date}. Інформація станом на ${updated}.`;
+    };
+
+    const applySchedule = (index) => {
+      if (!state.schedules.length || !state.schedules[index]) return;
+      state.activeIndex = index;
+      activeSchedule = state.schedules[index];
+      availabilityByGroup = computeAvailabilityMap(activeSchedule.groups);
+      renderMeta();
+      renderDateSwitcher();
+      renderGroups();
+      renderGroupCards();
+      updateResult();
+    };
+
+    const parseSchedules = (raw) => {
+      const lines = raw
+        .replace(/\r/g, "")
+        .replace(/\*/g, "")
+        .split("\n")
+        .map((l) => l.trim());
+
+      const schedules = [];
+      let current = null;
+      const headerPattern = /Граф.{0,40}на\s+(\d{2}\.\d{2}\.\d{4})/i;
+      const updatedPattern = /нформац.{0,10}на\s+(.+)/i;
+
+      for (const line of lines) {
+        if (!line) continue;
+
+        const headerMatch = line.match(headerPattern);
+        if (headerMatch) {
+          if (current && current.groups.length) {
+            schedules.push(current);
+          }
+          current = { date: headerMatch[1], updatedAt: "", groups: [] };
+          continue;
+        }
+
+        if (!current) continue;
+
+        const updatedMatch = line.match(updatedPattern);
+        if (updatedMatch && !current.updatedAt) {
+          current.updatedAt = updatedMatch[1].trim();
+          continue;
+        }
+
+        if (line.startsWith("Група")) {
+          const idMatch = line.match(/Група\s+(\d\.\d)/);
+          if (!idMatch) continue;
+          const outages = [];
+          const timeRegex = /з\s*(\d{2}:\d{2})\s*до\s*(\d{2}:\d{2})/g;
+          let m;
+          while ((m = timeRegex.exec(line)) !== null) {
+            outages.push([m[1], m[2]]);
+          }
+          if (outages.length) {
+            current.groups.push({ id: idMatch[1], outages });
+          }
+        }
+      }
+
+      if (current && current.groups.length) {
+        schedules.push(current);
+      }
+      return schedules;
+    };
+
+    const loadSchedule = async () => {
+      setStatus("Тягну розклади напряму з poweron.loe.lviv.ua...", "muted");
+      const sources = [
+        { url: sourceUrl, options: { cache: "no-store", mode: "cors" } },
+        { url: fallbackProxyUrl, options: { cache: "no-store" } }
+      ];
+
+      for (const source of sources) {
+        try {
+          const response = await fetch(source.url, source.options);
+          if (!response.ok) continue;
+          const text = await response.text();
+          const parsed = parseSchedules(text);
+          if (!parsed.length) continue;
+          state.schedules = parsed;
+          setStatus(`Отримано ${parsed.length} розкладів.`, "muted");
+          applySchedule(0);
+          return;
+        } catch (error) {
+          continue;
+        }
+      }
+
+      if (!state.schedules.length) {
+        activeSchedule = null;
+        availabilityByGroup = {};
+        showNoData("Не вдалося отримати live-дані.");
+      }
+      setStatus("Не вдалося отримати live-дані.", "danger");
+    };
+
+    document.getElementById("select-all").addEventListener("click", () => {
+      document
+        .querySelectorAll('input[name="group"]')
+        .forEach((input) => (input.checked = true));
+      updateResult();
+    });
+
+    document.getElementById("clear-all").addEventListener("click", () => {
+      document
+        .querySelectorAll('input[name="group"]')
+        .forEach((input) => (input.checked = false));
+      updateResult();
+    });
+
+    refreshBtn.addEventListener("click", loadSchedule);
+
+    loadSchedule();
+  </script>
+</body>
+</html>
