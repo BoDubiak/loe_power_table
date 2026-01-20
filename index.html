@@ -445,9 +445,28 @@
     const sourceUrl = "https://poweron.loe.lviv.ua/";
     const fallbackProxyUrl = "https://r.jina.ai/https://poweron.loe.lviv.ua/";
 
+    const STORAGE_KEY = "loe-power-table:selected-groups";
+    const loadSavedSelections = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    };
+
+    const saveSelections = (map) => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+      } catch (e) {
+        /* ignore storage errors */
+      }
+    };
+
     const state = {
       schedules: [],
-      activeIndex: 0
+      activeIndex: 0,
+      selected: loadSavedSelections()
     };
     let activeSchedule = null;
     let availabilityByGroup = {};
@@ -516,6 +535,28 @@
     const computeAvailabilityMap = (groups) =>
       Object.fromEntries(groups.map((g) => [g.id, invertOutages(g.outages)]));
 
+    const getActiveSelectionKey = () => (activeSchedule ? activeSchedule.date : null);
+
+    const getSavedSelectionForActive = () => {
+      const key = getActiveSelectionKey();
+      if (!key || !state.selected[key]) return new Set();
+      const saved = Array.isArray(state.selected[key]) ? state.selected[key] : [];
+      const valid = saved.filter((id) => activeSchedule.groups.some((g) => g.id === id));
+      if (valid.length !== saved.length) {
+        state.selected[key] = valid;
+        saveSelections(state.selected);
+      }
+      return new Set(valid);
+    };
+
+    const persistActiveSelection = (selected) => {
+      const key = getActiveSelectionKey();
+      if (!key || !activeSchedule) return;
+      const valid = selected.filter((id) => activeSchedule.groups.some((g) => g.id === id));
+      state.selected[key] = valid;
+      saveSelections(state.selected);
+    };
+
     const metaLine = document.getElementById("meta");
     const groupList = document.getElementById("group-list");
     const resultEl = document.getElementById("result");
@@ -553,6 +594,8 @@
       const selected = Array.from(document.querySelectorAll('input[name="group"]:checked')).map(
         (input) => input.value
       );
+
+      persistActiveSelection(selected);
 
       if (!selected.length) {
         resultEl.innerHTML = `
@@ -595,9 +638,7 @@
     };
 
     const renderGroups = () => {
-      const previouslySelected = new Set(
-        Array.from(document.querySelectorAll('input[name="group"]:checked')).map((i) => i.value)
-      );
+      const savedSelection = getSavedSelectionForActive();
       groupList.innerHTML = "";
       activeSchedule.groups.forEach((group) => {
         const label = document.createElement("label");
@@ -607,7 +648,7 @@
         input.type = "checkbox";
         input.name = "group";
         input.value = group.id;
-        input.checked = previouslySelected.has(group.id);
+        input.checked = savedSelection.has(group.id);
         input.addEventListener("change", updateResult);
 
         const name = document.createElement("strong");
