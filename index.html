@@ -385,6 +385,75 @@
       color: #d1ffd8;
       background: rgba(74, 222, 128, 0.08);
     }
+
+    .timelines {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline {
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .tick-bar {
+      display: grid;
+      grid-template-columns: repeat(96, 1fr);
+      gap: 1px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      padding: 0;
+      border: 1px solid var(--stroke);
+    }
+
+    .tick-labels {
+      position: relative;
+      height: 18px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.01em;
+    }
+
+    .tick-labels span {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .tick {
+      height: 14px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tick.on {
+      background: var(--success);
+    }
+
+    .tick.off {
+      background: rgba(255, 107, 107, 0.9);
+    }
+
+    @media (max-width: 720px) {
+      .tick {
+        height: 12px;
+      }
+    }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-CXGMJJR9ZZ"></script>
@@ -433,6 +502,11 @@
         <div id="result" class="result"></div>
       </section>
     </div>
+
+    <section class="panel" id="timeline-panel">
+      <h2><span class="dot"></span>Графік</h2>
+      <div id="timelines"></div>
+    </section>
 
     <section class="panel">
       <h2><span class="dot"></span>Деталі по групах</h2>
@@ -560,6 +634,7 @@
     const metaLine = document.getElementById("meta");
     const groupList = document.getElementById("group-list");
     const resultEl = document.getElementById("result");
+    const timelinesEl = document.getElementById("timelines");
     const groupCards = document.getElementById("group-cards");
     const statusEl = document.getElementById("status");
     const dateSwitcher = document.getElementById("date-switcher");
@@ -575,6 +650,7 @@
       dateSwitcher.innerHTML = "";
       groupList.innerHTML = "";
       groupCards.innerHTML = "";
+      timelinesEl.innerHTML = "";
       resultEl.innerHTML = `
         <div class="notice">
           <span class="marker"></span>
@@ -588,6 +664,64 @@
 
     const formatInterval = (interval) =>
       `${toClock(interval.start)} - ${toClock(interval.end)}`;
+
+    
+    const buildTicks = (outages) => {
+      const ticks = Array(96).fill("on");
+      const ranges = outages.map(([start, end]) => [parseTime(start), parseTime(end)]);
+      for (let i = 0; i < 96; i += 1) {
+        const slotStart = i * 15;
+        const slotEnd = slotStart + 15;
+        if (ranges.some(([rs, re]) => slotStart < re && slotEnd > rs)) {
+          ticks[i] = "off";
+        }
+      }
+      return ticks;
+    };
+
+    const renderTimelines = (selected) =>
+      `
+        <div class="timelines">
+          ${selected
+            .map((id) => {
+              const group = activeSchedule.groups.find((g) => g.id === id);
+              if (!group) return "";
+              const states = buildTicks(group.outages);
+              const ticks = states.map((state) => `<div class="tick ${state}"></div>`).join("");
+              const offMinutes = states.filter((s) => s === "off").length * 15;
+              const onMinutes = states.length * 15 - offMinutes;
+              const offHours = Math.round(offMinutes / 60);
+              const onHours = Math.round(onMinutes / 60);
+              const changes = [0];
+              for (let i = 1; i < states.length; i += 1) {
+                if (states[i] !== states[i - 1]) changes.push(i);
+              }
+              changes.push(96);
+              const labelSpans = changes
+                .map((idx) => {
+                  const minutes = idx * 15;
+                  const h = Math.floor(minutes / 60)
+                    .toString()
+                    .padStart(2, "0");
+                  const m = (minutes % 60).toString().padStart(2, "0");
+                  const left = (idx / 96) * 100;
+                  return `<span style="left:${left}%;"><span>${h}:${m}</span></span>`;
+                })
+                .join("");
+              return `
+                <div class="timeline">
+                  <div class="timeline-header">
+                    <strong>Група ${group.id}</strong>
+                    <span>${onHours} год є · ${offHours} год немає</span>
+                  </div>
+                  <div class="tick-bar">${ticks}</div>
+                  <div class="tick-labels">${labelSpans}</div>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
+      `;
 
     const updateResult = () => {
       if (!activeSchedule) return;
@@ -607,35 +741,37 @@
             </div>
           </div>
         `;
+        timelinesEl.innerHTML = "";
         return;
       }
 
       const intervals = intersectMany(selected.map((id) => availabilityByGroup[id] || []));
 
-      if (!intervals.length) {
-        resultEl.innerHTML = `
-          <div class="notice">
-            <span class="marker"></span>
-            <div>
-              <div>Немає проміжків, коли у всіх вибраних груп одночасно є світло.</div>
-              <small class="muted">Спробуй зняти частину груп, щоб побачити перетин.</small>
+      const intersection = intervals.length
+        ? intervals
+            .map(
+              (interval) => `
+                <div class="slot">
+                  <span>${formatInterval(interval)}</span>
+                  <small>Світло у всіх вибраних груп</small>
+                </div>
+              `
+            )
+            .join("")
+        : `
+            <div class="notice">
+              <span class="marker"></span>
+              <div>
+                <div>Немає проміжків, коли у всіх вибраних груп одночасно є світло.</div>
+                <small class="muted">Спробуй зняти частину груп, щоб побачити перетин.</small>
+              </div>
             </div>
-          </div>
-        `;
-        return;
-      }
+          `;
 
-      resultEl.innerHTML = intervals
-        .map(
-          (interval) => `
-            <div class="slot">
-              <span>${formatInterval(interval)}</span>
-              <small>Світло у всіх вибраних груп</small>
-            </div>
-          `
-        )
-        .join("");
+      resultEl.innerHTML = intersection;
+      timelinesEl.innerHTML = renderTimelines(selected);
     };
+
 
     const renderGroups = () => {
       const savedSelection = getSavedSelectionForActive();
