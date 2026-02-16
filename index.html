@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
@@ -409,6 +409,21 @@
       margin-bottom: 8px;
     }
 
+    .timeline-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .timeline-on-duration {
+      color: #9ff0ad;
+    }
+
+    .timeline-off-duration {
+      color: #ff9f9f;
+    }
+
     .tick-bar {
       display: grid;
       grid-template-columns: repeat(96, 1fr);
@@ -665,6 +680,12 @@
     const formatInterval = (interval) =>
       `${toClock(interval.start)} - ${toClock(interval.end)}`;
 
+    const formatDuration = (minutes) => {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours} год ${mins} хв`;
+    };
+
     
     const buildTicks = (outages) => {
       const ticks = Array(96).fill("on");
@@ -690,8 +711,8 @@
               const ticks = states.map((state) => `<div class="tick ${state}"></div>`).join("");
               const offMinutes = states.filter((s) => s === "off").length * 15;
               const onMinutes = states.length * 15 - offMinutes;
-              const offHours = Math.round(offMinutes / 60);
-              const onHours = Math.round(onMinutes / 60);
+              const offDuration = formatDuration(offMinutes);
+              const onDuration = formatDuration(onMinutes);
               const changes = [0];
               for (let i = 1; i < states.length; i += 1) {
                 if (states[i] !== states[i - 1]) changes.push(i);
@@ -712,7 +733,11 @@
                 <div class="timeline">
                   <div class="timeline-header">
                     <strong>Група ${group.id}</strong>
-                    <span>${onHours} год є · ${offHours} год немає</span>
+                    <span class="timeline-summary">
+                      <span class="timeline-on-duration">${onDuration}</span>
+                      <span>·</span>
+                      <span class="timeline-off-duration">${offDuration}</span>
+                    </span>
                   </div>
                   <div class="tick-bar">${ticks}</div>
                   <div class="tick-labels">${labelSpans}</div>
@@ -957,3 +982,4 @@
   </script>
 </body>
 </html>
+
